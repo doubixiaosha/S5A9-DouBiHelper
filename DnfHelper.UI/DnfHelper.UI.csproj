@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <OutputType>WinExe</OutputType>
+    <PlatformTarget>x86</PlatformTarget>
+    <Platform>x86</Platform>
+    <!-- 显式声明解决方案里用到的配置/平台，避免 VS 打开 sln 报“配置不存在”。 -->
+    <Configurations>Debug;Release</Configurations>
+    <Platforms>AnyCPU;x86</Platforms>
+    <LangVersion>8.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- exe 程序图标（Win32 资源），ico 位于解决方案根目录 S5A9-DouBiHelper\DNF.ico -->
+    <ApplicationIcon>..\DNF.ico</ApplicationIcon>
+    <AssemblyName>DnfHelper.UI</AssemblyName>
+    <RootNamespace>DnfHelper.UI</RootNamespace>
+    <Product>DouBi Helper</Product>
+    <Description>DNF 私服辅助工具</Description>
+    <!-- 产物目录：发布时整目录即为绿色包 -->
+    <OutputPath>$(MSBuildThisFileDirectory)..\build\$(Configuration)\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <IntermediateOutputPath>$(MSBuildThisFileDirectory)..\build\obj\ui\$(Configuration)\</IntermediateOutputPath>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <!-- 显式补齐解决方案使用的 Debug|x86 / Release|x86 配置组（VS 加载 sln 时按此校验）；
+       OutputPath/IntermediateOutputPath 沿用上面的统一布局：build\Debug、build\obj\ui\Debug。 -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>none</DebugType>
+    <Optimize>true</Optimize>
+    <DefineConstants>TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <!-- WPF 窗口图标：打包为资源，窗口用 pack:// 引用 -->
+  <ItemGroup>
+    <Resource Include="..\DNF.ico" Link="Assets\DNF.ico" />
+  </ItemGroup>
+
+</Project>

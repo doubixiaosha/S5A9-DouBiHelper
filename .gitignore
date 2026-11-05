@@ -1,0 +1,108 @@
+# ===================== 编译产物 / Build Output =====================
+# Visual Studio / MSBuild
+bin/
+obj/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+*.vcxproj.filters
+*.vcxproj.user
+
+# CMake
+out/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+*.cmake
+
+# GCC / Clang
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dll
+*.exe
+*.ilk
+*.pdb
+*.exp
+*.res
+*.map
+
+# 旧 C++ DLL 工程（已被纯 C# 实现取代，整个目录不入库）
+/DnfHelper.DLL/
+
+# 预编译头
+*.pch
+*.gch
+ipch/
+
+# ===================== 中间件 / 第三方依赖 =====================
+# 第三方库与下载的中间件（保留源码引用，不入库二进制）
+third_party/
+thirdparty/
+vendor/
+libs/
+packages/
+.middleware/
+middleware/
+
+# NuGet
+*.nupkg
+nuget-packages/
+
+# vcpkg
+vcpkg_installed/
+
+# Node（若前端/工具链用到）
+node_modules/
+dist/
+build/
+
+# Python 虚拟环境（若脚本用到）
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# ===================== 日志 / 临时文件 =====================
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# 自检 / 诊断输出
+/DouBi-diag*.txt
+*.diag.txt
+
+# 运行期生成的用户配置（绿色包在 exe 同目录生成；如需模板另存 DouBi.sample.ini 并单独跟踪）
+/DouBi.ini
+
+# ===================== 调试 / 运行时 =====================
+dump/
+dumps/
+*.dmp
+*.crash
+
+# ===================== 密钥 / 证书（红线：绝不入库）=====================
+*.pem
+*.key
+*.pfx
+*.cer
+*.crt
+my_ca/
+私钥*/
+*secret*
+*private*
+
+# ===================== IDE =====================
+.idea/
+*.iml
+.clangd/
+.compile_commands.json
