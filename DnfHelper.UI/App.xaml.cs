@@ -22,10 +22,6 @@ namespace DnfHelper.UI
                 viewModel.InitializeCore();
                 viewModel.AutoAttach();
             }
-            else
-            {
-                viewModel.AddLog(2, "初始化失败：" + error);
-            }
 
             var window = new MainWindow(viewModel);
             MainWindow = window;

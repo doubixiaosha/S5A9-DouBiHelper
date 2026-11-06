@@ -22,7 +22,4 @@
   <SolidColorBrush x:Key="SwitchOffBrush" Color="#D3DAE2" />
   <SolidColorBrush x:Key="ScrollThumbBrush" Color="#B7C0CA" />
   <SolidColorBrush x:Key="ScrollThumbHoverBrush" Color="#98A3AF" />
-  <SolidColorBrush x:Key="LogInfoBrush" Color="#2B323A" />
-  <SolidColorBrush x:Key="LogWarnBrush" Color="#A8680F" />
-  <SolidColorBrush x:Key="LogErrorBrush" Color="#B32B37" />
 </ResourceDictionary>

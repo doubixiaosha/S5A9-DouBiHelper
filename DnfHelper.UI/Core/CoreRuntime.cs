@@ -28,6 +28,7 @@ namespace DnfHelper.UI.Core
         internal bool PickupRunning;
         internal bool TraverseRunning;
         internal bool EquipRunning;
+        internal int AutoCharacterId;   // 自动读取的角色 ID，0 = 未读到（仅展示用）
     }
 
     /// <summary>
@@ -35,7 +36,7 @@ namespace DnfHelper.UI.Core
     /// </summary>
     internal static class CoreRuntime
     {
-        internal const string Version = "1.0.0";
+        internal const string Version = "1.1.0";
 
         /// <summary>
         /// BUFF / 物品远程调用序列的全局互斥：整个序列（多条 BUFF 或多件物品）期间独占，
@@ -66,6 +67,7 @@ namespace DnfHelper.UI.Core
             GmFeature.ShutdownGm();
             BuffFeature.Shutdown();
             AutoItemFeature.Shutdown();
+            HelperFeature.Shutdown();
             AnnounceFeature.Shutdown();
             Interlocked.Exchange(ref _callSequenceBusy, 0);
         }
@@ -147,6 +149,19 @@ namespace DnfHelper.UI.Core
             }
             catch (Exception)
             {
+            }
+        }
+
+        /// <summary>助手开关下发：只记录状态，已附加且状态变化时才发包。</summary>
+        internal static void SetHelper(int pickup, int hell)
+        {
+            try
+            {
+                HelperFeature.SetConfig(pickup != 0, hell != 0);
+            }
+            catch (Exception)
+            {
+                CoreLog.Error("助手 配置失败");
             }
         }
 
@@ -356,6 +371,8 @@ namespace DnfHelper.UI.Core
                     status.BossY = character.BossY;
                     status.RoomX = character.HasRoom ? character.RoomX : status.RoomX;
                     status.RoomY = character.HasRoom ? character.RoomY : status.RoomY;
+                    // 展示用：与发包用的取值读同一条链路，只做只读采样，不影响发包。
+                    status.AutoCharacterId = GameReader.CharacterId();
                 }
                 status.PickupRunning = PickupFeature.PickupRunning();
                 status.TraverseRunning = TraverseFeature.TraverseRunning();

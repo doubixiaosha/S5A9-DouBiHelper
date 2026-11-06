@@ -80,6 +80,46 @@ namespace DnfHelper.UI.Core.Shared
             return RemoteExecutor.Instance.Execute(code, SendTimeoutMs, out error);
         }
 
+        /// <summary>
+        /// 明文正文发包：BeginPacket → 逐字节调用游戏的 1 字节写入函数 → Send。
+        /// 游戏的「写入」函数本身就是明文追加，服务端按正文原样解析，因此文本可逐字节送入。
+        /// </summary>
+        internal static bool SendRaw(int head, byte[] body)
+        {
+            if (body == null || body.Length == 0)
+            {
+                return false;
+            }
+
+            var sendThis = RemoteProcess.Instance.ReadDword(GameAddresses.SendBase);
+            if (sendThis == 0)
+            {
+                return false;
+            }
+
+            var code = new Asm();
+            code.Push(0);
+            code.Push((uint)head);
+            code.MovEcx(sendThis);
+            code.MovEax(GameAddresses.CallBuffer);
+            code.CallEax();
+
+            foreach (var value in body)
+            {
+                code.Push(value);
+                code.MovEcx(sendThis);
+                code.MovEax(EncryptAddress(1));
+                code.CallEax();
+            }
+
+            code.MovEcx(sendThis);
+            code.MovEax(GameAddresses.CallSend);
+            code.CallEax();
+
+            string error;
+            return RemoteExecutor.Instance.Execute(code, SendTimeoutMs, out error);
+        }
+
         internal static bool PickupItemAt(int groundKey, int px, int py, int ix, int iy)
         {
             return Send(GameAddresses.CmdPickup,

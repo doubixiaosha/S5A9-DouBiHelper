@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -18,19 +18,21 @@ namespace DnfHelper.UI.ViewModels
     /// </summary>
     public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     {
-        private const int MaxLogEntries = 800;
-        private const int RecentLogCount = 3;
         private const string TargetExeName = "ARAD.EXE";
 
         /// <summary>自动触发的统一延迟（毫秒）：进入副本后的自动物品、副本→城镇后的装备处理共用。</summary>
         private const int AutoTriggerDelayMs = 1500;
 
+        /// <summary>助手开关的下发间隔（毫秒）：与聊天共用 1 秒 5 条限流，界面侧至少间隔 1 秒。</summary>
+        private const int HelperApplyGapMs = 1000;
+
         private readonly DispatcherTimer _statusTimer;
-        private readonly HashSet<string> _warned = new HashSet<string>();
 
         private bool _isAttached;
         private bool _isLightTheme;
         private string _statusText = "未附加";
+        private string _characterIdReadText = "读取 —";
+        private int _autoCharacterId;
         private string _characterLine = "未附加";
         private string _locationLine = string.Empty;
         private string _roomLine = string.Empty;
@@ -43,6 +45,8 @@ namespace DnfHelper.UI.ViewModels
         private int _enterPending;
         private Timer _exitDelayTimer;
         private int _exitPending;
+        private int _lastHelperApplyTick;
+        private Timer _helperDelayTimer;
         private bool _startupAnnounced;
         private bool _disposed;
 
@@ -53,12 +57,9 @@ namespace DnfHelper.UI.ViewModels
             VersionText = "v" + ProgramVersion();
 
             ReconnectCommand = new RelayCommand(() => Connect());
-            ClearLogCommand = new RelayCommand(ClearLogs);
             ToggleThemeCommand = new RelayCommand(ToggleTheme);
 
             Equip = new EquipOptionsViewModel(Config, SaveAndApply);
-
-            CoreBridge.Log += OnCoreLog;
 
             _statusTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
             _statusTimer.Tick += OnStatusTick;
@@ -67,19 +68,12 @@ namespace DnfHelper.UI.ViewModels
 
         public AppConfig Config { get; }
 
-        /// <summary>完整日志缓冲，仅用于诊断，不直接绑定到界面。</summary>
-        public ObservableCollection<LogEntry> Logs { get; } = new ObservableCollection<LogEntry>();
-
-        /// <summary>界面渲染用：最新 3 条，最新在最上面。</summary>
-        public ObservableCollection<LogEntry> RecentLogs { get; } = new ObservableCollection<LogEntry>();
-
         public EquipOptionsViewModel Equip { get; }
 
         public string[] PickupModes { get; } = { "吸物拾取", "自动入包" };
         public string[] TraverseModes { get; } = { "组包顺图", "强制顺图", "瞬移顺图", "移动顺图（占位）" };
 
         public ICommand ReconnectCommand { get; }
-        public ICommand ClearLogCommand { get; }
         public ICommand ToggleThemeCommand { get; }
 
         public bool IsAttached
@@ -329,13 +323,53 @@ namespace DnfHelper.UI.ViewModels
             }
         }
 
+        /// <summary>助手「自动直入包」：打开时探测 + 开启，关闭时下达关闭。</summary>
+        public bool HelperPickupEnabled
+        {
+            get => Config.Helper.PickupEnabled;
+            set
+            {
+                if (Config.Helper.PickupEnabled == value)
+                {
+                    return;
+                }
+                Config.Helper.PickupEnabled = value;
+                OnPropertyChanged();
+                SaveConfig();
+                RequestHelperApply();
+            }
+        }
+
+        /// <summary>助手「深渊连刷」：打开时探测 + 开启，关闭时下达关闭。</summary>
+        public bool HelperHellEnabled
+        {
+            get => Config.Helper.HellEnabled;
+            set
+            {
+                if (Config.Helper.HellEnabled == value)
+                {
+                    return;
+                }
+                Config.Helper.HellEnabled = value;
+                OnPropertyChanged();
+                SaveConfig();
+                RequestHelperApply();
+            }
+        }
+
+        /// <summary>角色ID 只读回显：自动读到的值；未进入角色/读取失败显示「—」。</summary>
+        public string CharacterIdReadText
+        {
+            get => _characterIdReadText;
+            private set => SetField(ref _characterIdReadText, value);
+        }
+
         public void InitializeCore()
         {
-            AddLog(0, "初始化完成");
             ApplyAll();
         }
 
-        /// <summary>启动后自动查找并附加 ARAD.EXE；失败只写日志并更新状态栏，不弹阻塞对话框。</summary>
+        /// <summary>启动后自动查找并附加 ARAD.EXE；失败只更新状态栏，不弹阻塞对话框。</summary>
         public void AutoAttach()
         {
             Connect();
@@ -348,14 +382,12 @@ namespace DnfHelper.UI.ViewModels
             ApplyTraverse();
             ApplyBuff();
             ApplyAutoItem();
+            ApplyHelper();
         }
 
         public void SaveConfig()
         {
-            if (!ConfigService.Save(Config))
-            {
-                AddLog(2, "配置保存失败");
-            }
+            ConfigService.Save(Config);
         }
 
         /// <summary>配置改动后：先落盘，再把规则重新下发内部运行时。</summary>
@@ -367,7 +399,7 @@ namespace DnfHelper.UI.ViewModels
 
         public void HandleHotkey(int id)
         {
-            // 热键回调统一回到 UI 线程再改绑定属性，避免跨线程改 ObservableCollection / 属性通知。
+            // 热键回调统一回到 UI 线程再改绑定属性，避免跨线程改绑定属性引发通知异常。
             var application = Application.Current;
             if (application != null && !application.Dispatcher.CheckAccess())
             {
@@ -380,26 +412,21 @@ namespace DnfHelper.UI.ViewModels
                 case HotkeyService.EquipId:
                     if (!Config.Equip.Enabled)
                     {
-                        AddLog(1, "装备处理 未开启，已忽略");
                         return;
                     }
                     if (!IsAttached)
                     {
-                        AddLog(1, "未附加游戏，已忽略");
                         return;
                     }
                     CoreBridge.EquipTrigger();
-                    AddLog(0, "ALT+F 已执行装备处理");
                     break;
 
                 case HotkeyService.PickupToggleId:
                     if (!IsAttached)
                     {
-                        AddLog(1, "未附加游戏，已忽略");
                         return;
                     }
                     PickupEnabled = !Config.Pickup.Enabled;
-                    AddLog(0, "ALT+Q 自动拾取 " + (Config.Pickup.Enabled ? "已开启" : "已关闭"));
                     break;
 
                 case HotkeyService.LeftId:
@@ -422,40 +449,20 @@ namespace DnfHelper.UI.ViewModels
                 case HotkeyService.BuffId:
                     if (!IsAttached)
                     {
-                        AddLog(1, "未附加游戏，已忽略");
                         return;
                     }
                     CoreBridge.TriggerBuff();
-                    AddLog(0, "ALT+1 已执行 BUFF");
                     CoreBridge.Announce("手动BUFF 已执行");
                     break;
 
                 case HotkeyService.AutoItemId:
                     if (!IsAttached)
                     {
-                        AddLog(1, "未附加游戏，已忽略");
                         return;
                     }
                     CoreBridge.TriggerAutoItem();
-                    AddLog(0, "ALT+2 已执行 物品");
                     CoreBridge.Announce("手动物品 已执行");
                     break;
-            }
-        }
-
-        public void AddLog(int level, string message)
-        {
-            var entry = new LogEntry(level, message);
-            Logs.Add(entry);
-            while (Logs.Count > MaxLogEntries)
-            {
-                Logs.RemoveAt(0);
-            }
-
-            RecentLogs.Insert(0, entry);
-            while (RecentLogs.Count > RecentLogCount)
-            {
-                RecentLogs.RemoveAt(RecentLogs.Count - 1);
             }
         }
 
@@ -466,7 +473,6 @@ namespace DnfHelper.UI.ViewModels
                 return;
             }
             _disposed = true;
-            CoreBridge.Log -= OnCoreLog;
             _statusTimer.Stop();
             _statusTimer.Tick -= OnStatusTick;
             lock (_delayLock)
@@ -483,13 +489,23 @@ namespace DnfHelper.UI.ViewModels
                     _exitDelayTimer.Dispose();
                     _exitDelayTimer = null;
                 }
+                if (_helperDelayTimer != null)
+                {
+                    _helperDelayTimer.Dispose();
+                    _helperDelayTimer = null;
+                }
             }
         }
 
         private static string ProgramVersion()
         {
             var version = Assembly.GetEntryAssembly()?.GetName().Version;
-            return version == null ? "1.0.0" : version.ToString();
+            if (version == null)
+            {
+                return "1.1.0";
+            }
+            // 程序集版本天然是四段，界面只显示前三段。
+            return string.Format("{0}.{1}.{2}", version.Major, version.Minor, version.Build);
         }
 
         /// <summary>折叠面板状态写回配置；返回值表示是否真的发生变化。</summary>
@@ -509,7 +525,6 @@ namespace DnfHelper.UI.ViewModels
         {
             if (!Config.Traverse.Enabled)
             {
-                AddLog(1, "顺图 未开启，已忽略");
                 return;
             }
             CoreBridge.TraverseStep(dir);
@@ -520,7 +535,6 @@ namespace DnfHelper.UI.ViewModels
         {
             if (!CoreBridge.IsAttached())
             {
-                AddLog(1, "未附加游戏，已忽略");
                 return;
             }
 
@@ -528,15 +542,9 @@ namespace DnfHelper.UI.ViewModels
             string note;
             if (!CoreBridge.ToggleLocalGm(out enabled, out note))
             {
-                AddLog(1, "本地GM 切换失败");
                 return;
             }
-            AddLog(0, enabled ? "本地GM 已启用" : "本地GM 已关闭");
             CoreBridge.Announce(enabled ? "本地GM 已启用" : "本地GM 已关闭");
-            if (!string.IsNullOrEmpty(note))
-            {
-                AddLog(1, note);
-            }
         }
 
         /// <summary>查找 ARAD.EXE 并附加。</summary>
@@ -546,7 +554,6 @@ namespace DnfHelper.UI.ViewModels
             if (target == null)
             {
                 StatusText = "未附加：未找到 ARAD.EXE 进程";
-                AddLog(1, "附加失败：未找到游戏进程");
                 return;
             }
 
@@ -554,7 +561,6 @@ namespace DnfHelper.UI.ViewModels
             if (!CoreBridge.Attach(target.Pid, out error))
             {
                 StatusText = "未附加：" + (string.IsNullOrEmpty(error) ? "附加失败" : error);
-                AddLog(2, "附加失败：" + (string.IsNullOrEmpty(error) ? "未知原因" : error));
                 return;
             }
 
@@ -562,7 +568,6 @@ namespace DnfHelper.UI.ViewModels
             _startupAnnounced = false;
             IsAttached = true;
             StatusText = "已附加 · PID " + target.Pid;
-            AddLog(0, "已附加游戏进程");
             ApplyAll();
 
             // 附加成功后自动扫描一次装备栏，供豁免列表展示真实数据。
@@ -572,12 +577,6 @@ namespace DnfHelper.UI.ViewModels
         private void ToggleTheme()
         {
             IsLightTheme = !IsLightTheme;
-        }
-
-        private void ClearLogs()
-        {
-            Logs.Clear();
-            RecentLogs.Clear();
         }
 
         private void OnStatusTick(object sender, EventArgs e)
@@ -601,7 +600,6 @@ namespace DnfHelper.UI.ViewModels
                 Volatile.Write(ref _lastGameState, int.MinValue);
                 StatusText = "未附加：游戏进程已退出（可点击「重连」）";
                 ResetCharacterInfo();
-                AddLog(1, "游戏进程已退出，已分离");
                 return;
             }
 
@@ -782,7 +780,6 @@ namespace DnfHelper.UI.ViewModels
             }
 
             ThreadPool.QueueUserWorkItem(_ => CoreBridge.EquipTrigger());
-            LogFromBackground(0, "回到城镇，装备处理 已执行");
         }
 
         private void TriggerDungeonEnter()
@@ -794,7 +791,6 @@ namespace DnfHelper.UI.ViewModels
                     CoreBridge.TriggerAutoItem();
                     CoreBridge.Announce("自动物品 已执行");
                 });
-                LogFromBackground(0, "进入副本，自动物品 已执行");
             }
         }
 
@@ -816,20 +812,12 @@ namespace DnfHelper.UI.ViewModels
             CoreBridge.Announce(DateTime.Now.ToString("HH:mm:ss"));
         }
 
-        /// <summary>延迟任务在定时器线程上完成，日志需回到 UI 线程再入集合。</summary>
-        private void LogFromBackground(int level, string message)
-        {
-            var application = Application.Current;
-            if (application == null)
-            {
-                return;
-            }
-            application.Dispatcher.BeginInvoke(new Action(() => AddLog(level, message)));
-        }
-
         /// <summary>按 1s 状态轮询刷新角色信息区；未附加不展示任何数据。</summary>
         private void UpdateCharacterInfo(CoreStatus status)
         {
+            _autoCharacterId = status.AutoCharacterId;
+            RefreshCharacterIdReadText();
+
             var name = string.IsNullOrEmpty(status.Name) ? "—" : status.Name;
             var job = string.IsNullOrEmpty(status.Job) ? "—" : status.Job;
             CharacterLine = "名称: " + name + "   等级: " + status.Level + "   职业: " + job +
@@ -871,6 +859,16 @@ namespace DnfHelper.UI.ViewModels
             RoomLine = string.Empty;
             HasLocationLine = false;
             HasRoomLine = false;
+            _autoCharacterId = 0;
+            RefreshCharacterIdReadText();
+        }
+
+        /// <summary>角色ID 回显：只显示自动读取结果，未进入角色/读取失败为「—」。</summary>
+        private void RefreshCharacterIdReadText()
+        {
+            CharacterIdReadText = _autoCharacterId > 0
+                ? _autoCharacterId.ToString(CultureInfo.InvariantCulture)
+                : "—";
         }
 
         private static string GameStateText(int state)
@@ -905,21 +903,11 @@ namespace DnfHelper.UI.ViewModels
                 exempt[i] = Config.Equip.Exempt[i] ? 1 : 0;
             }
             CoreBridge.SetEquip(Config.Equip.Enabled, Config.Equip.Actions, exempt);
-
-            if (Config.Equip.Enabled)
-            {
-                WarnOnce("equip-hotkey", "装备处理已开启：ALT+F 触发一次处理（按类型规则 + 单件豁免）。");
-            }
         }
 
         private void ApplyTraverse()
         {
             CoreBridge.SetTraverse(Config.Traverse.Enabled, (int)Config.Traverse.Mode);
-
-            if (Config.Traverse.Enabled && Config.Traverse.Mode == TraverseMode.Move)
-            {
-                WarnOnce("traverse-move", "顺图「移动顺图」为占位实现：选择已保存，执行时不做任何动作。");
-            }
         }
 
         /// <summary>BUFF 类型列表：随编辑框即时下发，供 ALT+1 单次触发使用（无自动触发）。</summary>
@@ -934,22 +922,44 @@ namespace DnfHelper.UI.ViewModels
             CoreBridge.SetAutoItem(Config.AutoItem.Enabled, Config.AutoItem.Ids);
         }
 
-        private void WarnOnce(string key, string message)
+        private void ApplyHelper()
         {
-            if (_warned.Add(key))
+            CoreBridge.SetHelper(Config.Helper.PickupEnabled, Config.Helper.HellEnabled);
+        }
+
+        /// <summary>
+        /// 助手开关的界面侧去抖：与上一次下发至少间隔 1 秒，避免撞上服务端与聊天共用的
+        /// 1 秒 5 条限流；间隔不足时延后到窗口末尾再下发，保留最后一次状态。
+        /// </summary>
+        private void RequestHelperApply()
+        {
+            var now = Environment.TickCount;
+            var elapsed = now - _lastHelperApplyTick;
+            if (_lastHelperApplyTick == 0 || elapsed < 0 || elapsed >= HelperApplyGapMs)
             {
-                AddLog(1, message);
+                _lastHelperApplyTick = now;
+                ApplyHelper();
+                return;
+            }
+
+            lock (_delayLock)
+            {
+                var wait = HelperApplyGapMs - elapsed;
+                if (_helperDelayTimer == null)
+                {
+                    _helperDelayTimer = new Timer(OnHelperDelayElapsed, null, wait, Timeout.Infinite);
+                }
+                else
+                {
+                    _helperDelayTimer.Change(wait, Timeout.Infinite);
+                }
             }
         }
 
-        private void OnCoreLog(int level, string message)
+        private void OnHelperDelayElapsed(object state)
         {
-            var application = Application.Current;
-            if (application == null)
-            {
-                return;
-            }
-            application.Dispatcher.BeginInvoke(new Action(() => AddLog(level, message)));
+            _lastHelperApplyTick = Environment.TickCount;
+            ApplyHelper();
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

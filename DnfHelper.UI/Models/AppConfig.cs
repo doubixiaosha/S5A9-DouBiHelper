@@ -71,6 +71,16 @@ namespace DnfHelper.UI.Models
         public string Ids { get; set; } = DefaultIds;
     }
 
+    /// <summary>
+    /// 魔界冒险助手：两个开关只在服务端侧生效，发送成功不等于服务端已生效；
+    /// 角色 ID 由运行时自动读取（GameReader.CharacterId），不再保存到配置。
+    /// </summary>
+    public sealed class HelperSettings
+    {
+        public bool PickupEnabled { get; set; }
+        public bool HellEnabled { get; set; }
+    }
+
     /// <summary>界面折叠状态，持久化后重启保持。</summary>
     public sealed class UiSettings
     {
@@ -87,5 +97,6 @@ namespace DnfHelper.UI.Models
         public TraverseSettings Traverse { get; } = new TraverseSettings();
         public BuffSettings Buff { get; } = new BuffSettings();
         public AutoItemSettings AutoItem { get; } = new AutoItemSettings();
+        public HelperSettings Helper { get; } = new HelperSettings();
     }
 }

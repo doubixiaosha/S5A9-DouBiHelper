@@ -26,6 +26,9 @@ namespace DnfHelper.UI.Core.Shared
         // ---- 人物 / 地图 ----
         internal const int OffMap = 0xD4;          // 人物 -> 地图对象（0 = 城镇）
         internal const int OffDoorOpen = 0x118;    // 地图对象 -> 开门标志（超级解密，0 = 开）
+        // 角色 ID：人物对象 + 0x6DC8，按 u32 读取（实测 4 个角色、4/4 轮偏移交集并与实时验证一致）。
+        internal const int OffCharacterId = 0x6DC8;
+        internal const int OffPlayerName = 0x374;  // 人物对象 -> 角色名指针（与 DouBi kOffCharName=884 一致）
 
         // ---- 实体链 ----
         internal const int OffEntityHead = 0xC0;
@@ -99,5 +102,7 @@ namespace DnfHelper.UI.Core.Shared
         internal const int CmdDisassemble = 26;
         internal const int CmdPickup = 43;           // GET_ITEM（20B）
         internal const int CmdMoveRoom = 45;         // MOVE_ROOM（100B）
+        internal const int CmdChat = 17;             // SEND_MESSAGE（聊天 / 助手文本）
+        internal const int CmdHelperSync = 870;      // SYNC_ITEM_SPACE（助手能力探测复用正文）
     }
 }

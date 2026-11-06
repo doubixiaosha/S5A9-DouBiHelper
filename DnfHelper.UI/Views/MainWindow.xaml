@@ -57,7 +57,7 @@
         </StackPanel>
       </Grid>
 
-      <!-- ================= 角色信息区：与标题区/底部日志同一底色，无卡片装饰 ================= -->
+      <!-- ================= 角色信息区：与标题区同一底色，无卡片装饰 ================= -->
       <Grid Grid.Row="1" Background="{DynamicResource PanelBgBrush}">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="*" />
@@ -118,16 +118,20 @@
               </Grid.RowDefinitions>
 
               <Grid Margin="12,10,12,10">
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto" />
+                  <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="*" />
                   <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <StackPanel>
-                  <TextBlock Text="自动捡物" Style="{StaticResource CardTitleStyle}" />
-                  <TextBlock Text="开关启用后自动拾取" Style="{StaticResource CardHintStyle}" />
-                </StackPanel>
+                <TextBlock Text="自动捡物" Style="{StaticResource CardTitleStyle}"
+                           VerticalAlignment="Center" Margin="0" />
                 <CheckBox Grid.Column="1" Style="{StaticResource SwitchStyle}"
                           IsChecked="{Binding PickupEnabled}" VerticalAlignment="Center" />
+                <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="开关启用后自动拾取"
+                           Style="{StaticResource CardHintStyle}" />
               </Grid>
 
               <Border Grid.Row="1" Background="{DynamicResource DividerBrush}" Margin="12,0" />
@@ -148,21 +152,24 @@
           <!-- 块 2：装备处理（启用开关 + 紧随其下的配置折叠区） -->
           <Border Style="{StaticResource CardStyle}" Margin="0,0,0,8">
             <Grid Margin="12,10,12,10">
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+              </Grid.RowDefinitions>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
               </Grid.ColumnDefinitions>
-              <StackPanel>
-                <TextBlock Text="装备处理" Style="{StaticResource CardTitleStyle}" />
-                <TextBlock Text="开关打开时，每次从副本回到城镇自动触发一次；ALT+F 可随时手动触发一次"
-                           Style="{StaticResource CardHintStyle}" TextWrapping="Wrap" />
-              </StackPanel>
+              <TextBlock Text="装备处理" Style="{StaticResource CardTitleStyle}" VerticalAlignment="Center" />
               <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock Text="自动处理开关" Style="{StaticResource CaptionStyle}"
                            VerticalAlignment="Center" Margin="0,0,8,0" />
                 <CheckBox Style="{StaticResource SwitchStyle}"
                           IsChecked="{Binding EquipEnabled}" VerticalAlignment="Center" />
               </StackPanel>
+              <TextBlock Grid.Row="1" Grid.ColumnSpan="2"
+                         Text="开关打开时，每次从副本回到城镇自动触发一次；ALT+F 可随时手动触发一次"
+                         Style="{StaticResource CardHintStyle}" TextWrapping="Wrap" />
             </Grid>
           </Border>
 
@@ -299,16 +306,19 @@
               </Grid.RowDefinitions>
 
               <Grid Margin="12,10,12,10">
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto" />
+                  <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="*" />
                   <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <StackPanel>
-                  <TextBlock Text="顺图" Style="{StaticResource CardTitleStyle}" />
-                  <TextBlock Text="ALT + 方向键；关闭时热键无响应" Style="{StaticResource CardHintStyle}" />
-                </StackPanel>
+                <TextBlock Text="顺图" Style="{StaticResource CardTitleStyle}" VerticalAlignment="Center" />
                 <CheckBox Grid.Column="1" Style="{StaticResource SwitchStyle}"
                           IsChecked="{Binding TraverseEnabled}" VerticalAlignment="Center" />
+                <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="ALT + 方向键；关闭时热键无响应"
+                           Style="{StaticResource CardHintStyle}" />
               </Grid>
 
               <Grid Grid.Row="1" Margin="12,10,12,10">
@@ -340,35 +350,76 @@
               <Border Background="{DynamicResource DividerBrush}" Height="1" Margin="0,10,0,0" />
 
               <Grid Margin="0,10,0,0">
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto" />
+                  <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="*" />
                   <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <StackPanel>
-                  <TextBlock Text="自动物品" Style="{StaticResource FieldLabelStyle}" />
-                  <TextBlock Text="填 物品 ID（逗号分隔）。开关打开时，每次进入副本 1.5 秒后自动执行一次；ALT+2 可手动触发一次。"
-                             Style="{StaticResource CardHintStyle}" TextWrapping="Wrap" />
-                </StackPanel>
+                <TextBlock Text="自动物品" Style="{StaticResource FieldLabelStyle}" VerticalAlignment="Center" />
                 <CheckBox Grid.Column="1" Style="{StaticResource SwitchStyle}"
                           IsChecked="{Binding AutoItemEnabled}" VerticalAlignment="Center" />
+                <TextBlock Grid.Row="1" Grid.ColumnSpan="2"
+                           Text="填 物品 ID（逗号分隔）。开关打开时，每次进入副本 1.5 秒后自动执行一次；ALT+2 可手动触发一次。"
+                           Style="{StaticResource CardHintStyle}" TextWrapping="Wrap" />
               </Grid>
               <TextBox Text="{Binding AutoItemIds}" Margin="0,6,0,0" VerticalContentAlignment="Center"
                        ToolTip="物品 ID，逗号或空格分隔，可填多个" />
             </StackPanel>
           </Border>
+
+          <!-- 块 3.6：魔界助手（独立卡片，配置段 [魔界助手]） -->
+          <Border Style="{StaticResource CardStyle}" Margin="0,0,0,8">
+            <StackPanel Margin="12,10,12,10">
+              <TextBlock Text="魔界助手" Style="{StaticResource CardTitleStyle}" />
+              <TextBlock Text="注意：生效成功由服务端侧判定，发送成功 ≠ 已生效"
+                         Style="{StaticResource CardHintStyle}" TextWrapping="Wrap" />
+
+              <Grid Margin="0,10,0,0" MinHeight="20">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="助手版自动入包开关" Style="{StaticResource FieldLabelStyle}"
+                           VerticalAlignment="Center" />
+                <CheckBox Grid.Column="1" Style="{StaticResource SwitchStyle}"
+                          IsChecked="{Binding HelperPickupEnabled}" VerticalAlignment="Center" />
+              </Grid>
+
+              <Grid Margin="0,10,0,0" MinHeight="20">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="深渊连刷开关" Style="{StaticResource FieldLabelStyle}"
+                           VerticalAlignment="Center" />
+                <CheckBox Grid.Column="1" Style="{StaticResource SwitchStyle}"
+                          IsChecked="{Binding HelperHellEnabled}" VerticalAlignment="Center" />
+              </Grid>
+
+              <!-- 角色ID 只读回显：数据源为 CoreStatus.AutoCharacterId，每秒刷新 -->
+              <StackPanel Orientation="Horizontal" Margin="0,10,0,0" MinHeight="20"
+                          VerticalAlignment="Center">
+                <TextBlock Text="角色ID回显" Style="{StaticResource FieldLabelStyle}"
+                           VerticalAlignment="Center" />
+                <TextBlock Text="{Binding CharacterIdReadText}" Style="{StaticResource CaptionStyle}"
+                           FontSize="11" Margin="8,0,0,0" VerticalAlignment="Center" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
         </StackPanel>
       </ScrollViewer>
 
-      <!-- ================= 块 4：底部运行日志 ================= -->
+      <!-- ================= 块 4：底部热键说明 ================= -->
       <Grid Grid.Row="3" Background="{DynamicResource PanelBgBrush}">
         <Grid.RowDefinitions>
-          <RowDefinition Height="Auto" />
-          <RowDefinition Height="Auto" />
           <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <!-- 热键说明：四行整体居中，强调色小字；第一/四行两段之间留大间隔 -->
-        <StackPanel Grid.Row="0" Margin="12,8,10,4" HorizontalAlignment="Center">
+        <StackPanel Grid.Row="0" Margin="12,8,10,8" HorizontalAlignment="Center">
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
             <TextBlock Text="ALT+Q 自动拾取开关" FontSize="11"
                        Foreground="{DynamicResource AccentBrush}" />
@@ -386,64 +437,6 @@
                        Foreground="{DynamicResource AccentBrush}" />
           </StackPanel>
         </StackPanel>
-
-        <Grid Grid.Row="1" Margin="12,2,10,0">
-          <TextBlock Text="运行日志" Style="{StaticResource CaptionStyle}" VerticalAlignment="Center" />
-          <Button HorizontalAlignment="Right" Content="清空" Style="{StaticResource SecondaryButton}"
-                  Height="22" Padding="8,0" Command="{Binding ClearLogCommand}" />
-        </Grid>
-
-        <ListBox Grid.Row="2" ItemsSource="{Binding RecentLogs}" Height="68" Margin="8,2,8,8"
-                   Background="Transparent" BorderThickness="0"
-                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                   ScrollViewer.VerticalScrollBarVisibility="Disabled">
-            <ListBox.ItemTemplate>
-              <DataTemplate>
-                <Grid ToolTip="{Binding Message}">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="56" />
-                    <ColumnDefinition Width="38" />
-                    <ColumnDefinition Width="*" />
-                  </Grid.ColumnDefinitions>
-                  <TextBlock Text="{Binding TimeText}" FontFamily="{DynamicResource MonoFontFamily}"
-                             FontSize="11" Foreground="{DynamicResource TextMutedBrush}"
-                             VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="1" Text="{Binding LevelText}" FontSize="11"
-                             VerticalAlignment="Center">
-                    <TextBlock.Style>
-                      <Style TargetType="{x:Type TextBlock}">
-                        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
-                        <Style.Triggers>
-                          <DataTrigger Binding="{Binding Level}" Value="1">
-                            <Setter Property="Foreground" Value="{DynamicResource LogWarnBrush}" />
-                          </DataTrigger>
-                          <DataTrigger Binding="{Binding Level}" Value="2">
-                            <Setter Property="Foreground" Value="{DynamicResource LogErrorBrush}" />
-                          </DataTrigger>
-                        </Style.Triggers>
-                      </Style>
-                    </TextBlock.Style>
-                  </TextBlock>
-                  <TextBlock Grid.Column="2" Text="{Binding Message}" FontFamily="{DynamicResource MonoFontFamily}"
-                             FontSize="11" TextTrimming="CharacterEllipsis" VerticalAlignment="Center">
-                    <TextBlock.Style>
-                      <Style TargetType="{x:Type TextBlock}">
-                        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
-                        <Style.Triggers>
-                          <DataTrigger Binding="{Binding Level}" Value="1">
-                            <Setter Property="Foreground" Value="{DynamicResource LogWarnBrush}" />
-                          </DataTrigger>
-                          <DataTrigger Binding="{Binding Level}" Value="2">
-                            <Setter Property="Foreground" Value="{DynamicResource LogErrorBrush}" />
-                          </DataTrigger>
-                        </Style.Triggers>
-                      </Style>
-                    </TextBlock.Style>
-                  </TextBlock>
-                </Grid>
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
       </Grid>
     </Grid>
   </Border>

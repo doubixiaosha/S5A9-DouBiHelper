@@ -3,12 +3,10 @@ using System;
 namespace DnfHelper.UI.Core.Base
 {
     /// <summary>
-    /// 日志回调由 UI 注入，任何线程都可调用，订阅方自行转投 UI 线程。
+    /// 内部诊断日志：统一输出到调试器（OutputDebugString），不再进入界面。
     /// </summary>
     internal static class CoreLog
     {
-        internal static event Action<int, string> Message;
-
         internal static void Info(string message)
         {
             Write(0, message);
@@ -26,12 +24,7 @@ namespace DnfHelper.UI.Core.Base
 
         internal static void Write(int level, string message)
         {
-            var handler = Message;
-            if (handler != null)
-            {
-                handler(level, message);
-            }
-            NativeApi.OutputDebugString("[DouBiHelper] " + message + "\n");
+            NativeApi.OutputDebugString("[DouBi] " + message + "\n");
         }
     }
 }

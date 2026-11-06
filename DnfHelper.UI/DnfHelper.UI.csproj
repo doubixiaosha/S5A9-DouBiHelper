@@ -18,6 +18,14 @@
     <RootNamespace>DnfHelper.UI</RootNamespace>
     <Product>DouBi Helper</Product>
     <Description>DNF 私服辅助工具</Description>
+    <!-- 对外版本统一为三段式 1.1.0：Version/InformationalVersion 用三段；
+         AssemblyVersion、FileVersion 是程序集与 Win32 版本资源，格式强制四段，用 1.1.0.0。 -->
+    <Version>1.1.0</Version>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <FileVersion>1.1.0.0</FileVersion>
+    <InformationalVersion>1.1.0</InformationalVersion>
+    <!-- 默认会往 InformationalVersion 追加 git 提交号，这里关掉，保证元数据就是 1.1.0。 -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <!-- 产物目录：发布时整目录即为绿色包 -->
     <OutputPath>$(MSBuildThisFileDirectory)..\build\$(Configuration)\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>

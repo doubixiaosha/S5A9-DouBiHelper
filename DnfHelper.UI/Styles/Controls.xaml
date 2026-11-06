@@ -3,7 +3,6 @@
 
   <!-- ============ 字体 ============ -->
   <FontFamily x:Key="UiFontFamily">Microsoft YaHei UI</FontFamily>
-  <FontFamily x:Key="MonoFontFamily">Consolas</FontFamily>
 
   <!-- ============ 文本样式 ============ -->
   <Style x:Key="CardTitleStyle" TargetType="{x:Type TextBlock}">

@@ -19,6 +19,7 @@ namespace DnfHelper.UI.Models
         private const string SectionEquip = "装备处理";
         private const string SectionTraverse = "顺图";
         private const string SectionSpecial = "特殊功能";
+        private const string SectionHelper = "魔界助手";
 
         private const string DefaultTheme = "Dark";
         private const string DefaultBuffTypes = BuffSettings.DefaultTypes;
@@ -46,6 +47,7 @@ namespace DnfHelper.UI.Models
                 ReadTraverse(sections, config);
                 ReadBuff(sections, config);
                 ReadAutoItem(sections, config);
+                ReadHelper(sections, config);
             }
             catch (Exception)
             {
@@ -88,6 +90,11 @@ namespace DnfHelper.UI.Models
                 builder.AppendLine("[" + SectionSpecial + "]");
                 builder.AppendLine("BUFF类型=" + Escape(config.Buff.Types));
                 builder.AppendLine("物品ID=" + Escape(config.AutoItem.Ids));
+                builder.AppendLine();
+
+                builder.AppendLine("[" + SectionHelper + "]");
+                builder.AppendLine("自动直入包=" + Bool(config.Helper.PickupEnabled));
+                builder.AppendLine("深渊连刷=" + Bool(config.Helper.HellEnabled));
 
                 File.WriteAllText(path, builder.ToString(), new UTF8Encoding(false));
                 return true;
@@ -166,6 +173,13 @@ namespace DnfHelper.UI.Models
         private static void ReadAutoItem(Dictionary<string, Dictionary<string, string>> sections, AppConfig config)
         {
             config.AutoItem.Ids = ReadString(sections, SectionSpecial, "物品ID", DefaultItemIds);
+        }
+
+        /// <summary>助手：只读「魔界助手」段内的两个中文键，值只认「是/否」。</summary>
+        private static void ReadHelper(Dictionary<string, Dictionary<string, string>> sections, AppConfig config)
+        {
+            config.Helper.PickupEnabled = ReadBool(sections, SectionHelper, "自动直入包", false);
+            config.Helper.HellEnabled = ReadBool(sections, SectionHelper, "深渊连刷", false);
         }
 
         /// <summary>只取当前中文段/中文键，缺失或键不存在时用内置默认值。</summary>

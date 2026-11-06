@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">
-  <assemblyIdentity version="1.0.0.0" name="DnfHelper.UI.app" />
+  <!-- assemblyIdentity 的 version 是 Win32 侧 SxS 标识，格式强制四段，故写 1.1.0.0；对外版本仍为 1.1.0。 -->
+  <assemblyIdentity version="1.1.0.0" name="DnfHelper.UI.app" />
 
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
     <security>

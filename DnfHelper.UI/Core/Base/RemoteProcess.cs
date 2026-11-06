@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace DnfHelper.UI.Core.Base
@@ -115,6 +116,12 @@ namespace DnfHelper.UI.Core.Base
         {
             var buffer = new byte[4];
             return ReadBytes(address, buffer, 4) ? BitConverter.ToUInt32(buffer, 0) : fallback;
+        }
+
+        internal ushort ReadWord(uint address, ushort fallback = 0)
+        {
+            var buffer = new byte[2];
+            return ReadBytes(address, buffer, 2) ? BitConverter.ToUInt16(buffer, 0) : fallback;
         }
 
         internal float ReadFloat(uint address, float fallback = 0.0f)

@@ -38,6 +38,7 @@ namespace DnfHelper.UI.Services
         public int PickupRunning;
         public int TraverseRunning;
         public int EquipRunning;
+        public int AutoCharacterId;
     }
 
     /// <summary>
@@ -46,8 +47,6 @@ namespace DnfHelper.UI.Services
     /// </summary>
     public static class CoreBridge
     {
-        public static event Action<int, string> Log;
-
         public static bool Ready { get; private set; }
 
         public static string Version => CoreRuntime.Version;
@@ -65,7 +64,6 @@ namespace DnfHelper.UI.Services
                 return false;
             }
 
-            CoreLog.Message += RaiseLog;
             Ready = true;
             return true;
         }
@@ -84,7 +82,6 @@ namespace DnfHelper.UI.Services
             {
                 // 退出路径上的异常不再向上抛。
             }
-            CoreLog.Message -= RaiseLog;
             Ready = false;
         }
 
@@ -202,6 +199,16 @@ namespace DnfHelper.UI.Services
             CoreRuntime.TriggerAutoItem();
         }
 
+        /// <summary>助手开关下发；角色 ID 由内部运行时自动读取。</summary>
+        public static void SetHelper(bool pickup, bool hell)
+        {
+            if (!Ready)
+            {
+                return;
+            }
+            CoreRuntime.SetHelper(pickup ? 1 : 0, hell ? 1 : 0);
+        }
+
         /// <summary>本地 GM 切换；返回 false 时 note 说明原因。</summary>
         public static bool ToggleLocalGm(out bool enabled, out string note)
         {
@@ -269,6 +276,7 @@ namespace DnfHelper.UI.Services
             status.PickupRunning = snapshot.PickupRunning ? 1 : 0;
             status.TraverseRunning = snapshot.TraverseRunning ? 1 : 0;
             status.EquipRunning = snapshot.EquipRunning ? 1 : 0;
+            status.AutoCharacterId = snapshot.AutoCharacterId;
             return true;
         }
 
@@ -302,15 +310,6 @@ namespace DnfHelper.UI.Services
                 return string.Empty;
             }
             return name.Length > 63 ? name.Substring(0, 63) : name;
-        }
-
-        private static void RaiseLog(int level, string message)
-        {
-            var handler = Log;
-            if (handler != null)
-            {
-                handler(level, message);
-            }
         }
     }
 }

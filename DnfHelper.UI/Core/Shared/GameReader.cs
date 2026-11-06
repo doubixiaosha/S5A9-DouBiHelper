@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using DnfHelper.UI.Core.Base;
 
@@ -76,6 +77,33 @@ namespace DnfHelper.UI.Core.Shared
         private static bool ValidPointer(uint pointer)
         {
             return pointer >= 0x10000 && pointer < 0x80000000 && (pointer & 3) == 0;
+        }
+
+        /// <summary>
+        /// 当前角色 ID：读 [[PlayerBase] + OffCharacterId] 的 u32（实测确认的玩家对象 +0x6DC8）。
+        /// 玩家对象为 0（未进入角色）时直接返回 0，不读任何地址。
+        /// 取值必须落在 1..65535，否则视为未取到；返回 0 交由手动输入兜底。
+        /// </summary>
+        internal static ushort CharacterId()
+        {
+            var player = Player();
+            if (player == 0)
+            {
+                return 0;
+            }
+
+            var address = player + GameAddresses.OffCharacterId;
+            if (!P.IsReadable(address, 4))
+            {
+                return 0;
+            }
+            var value = P.ReadDword(address);
+            if (value < 1 || value > 0xFFFF)
+            {
+                return 0;
+            }
+
+            return (ushort)value;
         }
 
         // 地图网格：p2 = [[RoomBase + OffRoomTime] + OffDoorType]。

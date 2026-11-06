@@ -66,14 +66,7 @@ namespace DnfHelper.UI.Views
         private void OnSourceInitialized(object sender, EventArgs e)
         {
             var handle = new WindowInteropHelper(this).Handle;
-            if (_hotkey.Register(handle))
-            {
-                _viewModel.AddLog(0, "全局热键 已注册");
-            }
-            else
-            {
-                _viewModel.AddLog(1, _hotkey.LastError);
-            }
+            _hotkey.Register(handle);
             _hotkey.Pressed += id => _viewModel.HandleHotkey(id);
         }
 
